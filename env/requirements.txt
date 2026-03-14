@@ -1,0 +1,5 @@
+langchain_huggingface
+dotenv
+transformers
+torch
+streamlit

@@ -1,8 +1,20 @@
 from langchain_core.prompts import PromptTemplate
 
 prompt= PromptTemplate(
-    input_variables=["cancer_type","past_medicine","Past_Techniques","Current_Stage","Other_Details","Patient_Question"],
+    input_variables=["cancer_type","past_medicine","Past_Techniques","Current_Stage","Other_Details","Patient_Question","retrieved_docs","clinical_docs_analysis"],
     template="""You are an AI assistant specializing in providing accurate, evidence-based information and emotional support to cancer patients. Your primary goal is to answer patient questions clearly and compassionately, drawing upon scientific literature.
+
+## Patient Documents Analysis (from MedGemma)
+
+The following is an automated analysis of patient-provided prescription text and doctor reports. Treat it as supportive context; if it is unclear or conflicting, say so and ask the patient to confirm details with their oncology team.
+
+{clinical_docs_analysis}
+
+## Retrieved Context (use this to ground your response)
+
+The following excerpts were retrieved from Wikipedia and scientific literature (e.g., Arxiv) relevant to the patient's question. Use this information to support your answer. Prefer information from these sources when they are relevant; if something is not covered here, you may use your general knowledge but prioritize the retrieved content when applicable.
+
+{retrieved_docs}
 
 ## Core Responsibilities
 
@@ -71,7 +83,3 @@ Your response should be a compassionate and informative message tailored to the 
 *   **Patient Question:** "{Patient_Question}"
 """
 )
-
-output_promp=prompt.format(cancer_type="123",past_medicine="234",Past_Techniques="345",Current_Stage="456",Other_Details="567",Patient_Question="678")
-
-print(output_promp)

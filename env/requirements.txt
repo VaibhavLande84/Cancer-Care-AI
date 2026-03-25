@@ -3,3 +3,12 @@ dotenv
 transformers
 torch
 streamlit
+langchain_google_genai
+langchain_core
+langchain
+langchain-community
+wikipedia
+arxiv
+fastapi
+pydantic
+fastapi[standard]

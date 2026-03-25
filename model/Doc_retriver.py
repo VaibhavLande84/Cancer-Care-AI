@@ -9,3 +9,4 @@ def get_docs(query):
     retriever = ArxivRetriever(load_max_docs=8)
     docs_research = retriever.invoke(query)
     return docs_wiki, docs_research
+

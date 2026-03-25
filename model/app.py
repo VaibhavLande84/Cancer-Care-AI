@@ -8,7 +8,8 @@ from Doc_retriver import get_docs
 from typing import List, Optional
 
 # 1. Configuration & Model Setup
-load_dotenv()
+dotenv_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(dotenv_path)
 api_key = os.getenv("access_token")
 
 HF_MED_MODEL_NAME = os.getenv("HF_MED_MODEL_NAME", "google/medgemma-4b-it")

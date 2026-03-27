@@ -1,58 +1,158 @@
 import streamlit as st
 import requests
+#-------------------------------------------------------------------------------------------------------------------------------------------
+BACKEND_URL = "http://localhost:8000"
 
-# Set Streamlit page config
-st.set_page_config(page_title="Cancer Care AI Assistant", page_icon="🎗️", layout="wide")
+st.set_page_config(
+    page_title="Cancer Care AI",
+    page_icon="🎗️",
+    layout="wide",
+    initial_sidebar_state="expanded",
+)
 
-st.title("🎗️ Cancer Care AI Assistant")
-st.markdown("This assistant provides information and emotional support to cancer patients using Gemini and medical literature.")
+# ---------------------------------------------------------------------------
+# Custom CSS
+# ---------------------------------------------------------------------------
 
-st.header("Patient Information")
 
-col1, col2 = st.columns(2)
+# ---------------------------------------------------------------------------
+#state dict
+# ---------------------------------------------------------------------------
+def state():
+    config={
+        "token": None,
+        "user_id": None,
+        "username": None,
+        "full_name": None,
+        "page": "login",
+        "active_conv_id": None,
+        "chat_messages": [],
+    }
+    for k,v in config.items():
+        if k not in st.session_state:
+            st.session_state[k]=v
 
-with col1:
-    cancer_type = st.text_input("Cancer Type", placeholder="e.g., Stage III Non-Small Cell Lung Cancer")
-    past_medicine = st.text_area("Past Medicine", placeholder="e.g., Chemotherapy, Tamoxifen")
-    past_techniques = st.text_area("Past Techniques", placeholder="e.g., Surgery, Immunotherapy")
-    current_stage = st.text_input("Current Stage", placeholder="e.g., Stage IV, Remission")
+state()
 
-with col2:
-    other_details = st.text_area("Other Details", placeholder="e.g., Experiencing severe fatigue...")
-    clinical_docs_analysis = st.text_area("Clinical Docs Analysis", placeholder="Paste any doctor reports or prescription text analysis here...")
+def update_state(input):
+    for k,v in input.items():
+        if k not in st.session_state:
+            return("you are tying to update state variable which is not initiated")
+        st.session_state[k]=v
+
+# ---------------------------------------------------------------------------
+# API helpers
+# ---------------------------------------------------------------------------
+def api_headers():
+    return {"Authorization": f"Bearer {st.session_state.token}"}
+
+def api_post(endpoint, json=None, files=None, auth=True):
+    headers = api_headers() if auth else {}
+    try:
+        r = requests.post(
+            f"{BACKEND_URL}{endpoint}",
+            json=json,
+            files=files,
+            headers=headers,
+            timeout=60,
+        )
+        if r.status_code == 401:
+            st.error("Your session has expired. Please log in again.")
+            st.stop() # Stops the rest of the app from running
+        elif r.status_code == 200 & st.session_state.page in [""]:#add pages to show login message
+            st.success("Data fetched successfully!")
+        return r
+
+    except requests.ConnectionError:
+        st.error(" Cannot connect to backend. Make sure uvicorn is running on port 8000.")
+        return None
     
-st.header("Ask the Assistant")
-patient_question = st.text_input("Your Question", placeholder="What are my treatment options now?")
 
-if st.button("Generate Response"):
-    if not patient_question or not cancer_type:
-        st.warning("Please provide at least the Cancer Type and your Question.")
-    else:
-        with st.spinner("Analyzing and retrieving relevant medical literature..."):
-            # Prepare the payload for FastAPI
-            payload = {
-                "query": patient_question,
-                "cancer_type": cancer_type,
-                "past_medicine": past_medicine,
-                "Past_Techniques": past_techniques,
-                "Current_Stage": current_stage,
-                "Other_Details": other_details,
-                "Patient_Question": patient_question,
-                "retrieved_docs": "",
-                "clinical_docs_analysis": clinical_docs_analysis
-            }
+def api_get(endpoint):
+    try:
+        r = requests.get(
+            f"{BACKEND_URL}{endpoint}",
+            headers=api_headers(),
+            timeout=30,
+        )
+        return r
+    except requests.ConnectionError:
+        st.error(f" Cannot connect to backend error while connecting to {endpoint}")
+        return None
+
+
+def api_delete(endpoint):
+    try:
+        r = requests.delete(
+            f"{BACKEND_URL}{endpoint}",
+            headers=api_headers(),
+            timeout=30,
+        )
+        return r
+    except requests.ConnectionError:
+        st.error(f" Cannot connect to backend error while connecting to {endpoint}")
+        return None
+
+def safe_json(r):
+    """Safely parse JSON from a response; return {} on failure."""
+    try:
+        return r.json()
+    except Exception:
+        return {}
+
+
+def logout():
+    for key in ["token", "user_id", "username", "full_name", "active_conv_id", "chat_messages"]:
+        st.session_state[key] = None
+    st.session_state["chat_messages"] = []
+    st.session_state["page"] = "login"
+
+
+# ---------------------------------------------------------------------------
+# Sidebar
+# ---------------------------------------------------------------------------
+def page_login():
+    # ... (your existing markdown and form code) ...
+    st.markdown('<div class="gradient-title">Welcome Back 👋</div>', unsafe_allow_html=True)
+    st.markdown("Sign in to your Cancer Care AI account.")
+    st.markdown("")
+
+    with st.form("login_form"):
+        username = st.text_input("Username", placeholder="your_username")
+        password = st.text_input("Password", type="password", placeholder="••••••••")
+        submitted = st.form_submit_button("Sign In →", use_container_width=True)
+
+    if submitted:
+        if not username or not password:
+            st.error("Please fill in all fields.")
+            return
+        
+        r = api_post("/auth/login", json={"username": username, "password": password}, auth=False)
+        
+        if r and r.status_code == 200:
+            data = r.json()
+            # Update session state
+            st.session_state.token = data["access_token"]
+            st.session_state.user_id = data["user_id"]
+            st.session_state.username = data["username"]
+            st.session_state.full_name = data["full_name"]
+            st.session_state.page = "chat"
             
-            try:
-                # Assuming the FastAPI runs on localhost:8000
-                response = requests.post("http://localhost:8000//api/generate", json=payload)
-                
-                if response.status_code == 200:
-                    data = response.json()
-                    st.success("Analysis Complete")
-                    st.write("### AI Response")
-                    st.write(data.get("response", "No response received."))
-                else:
-                    st.error(f"Error: Backend returned status code {response.status_code}")
-                    st.error(response.text)
-            except requests.exceptions.ConnectionError:
-                st.error("Failed to connect to the backend server. Please ensure the FastAPI backend is running on http://127.0.0.1:8000/")
+            st.success("✅ Login successful!")
+            st.rerun()  # <--- CRITICAL: This refreshes the app to show the chat page
+        else:
+            error_msg = safe_json(r).get('detail', 'Login failed')
+            st.error(f"❌ {error_msg}")
+
+def main():
+    # Routing Logic
+    if st.session_state.token is None or st.session_state.page == "login":
+        page_login()
+    elif st.session_state.page == "chat":
+        st.write(f"Welcome, {st.session_state.full_name}! This is the Chat Page.")
+        if st.button("Logout"):
+            logout()
+            st.rerun()
+
+if __name__ == "__main__":
+    main()

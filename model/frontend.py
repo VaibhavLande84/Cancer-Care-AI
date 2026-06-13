@@ -4,7 +4,7 @@ import requests
 # Set Streamlit page config
 st.set_page_config(page_title="Cancer Care AI Assistant", page_icon="🎗️", layout="wide")
 
-st.title("🎗️ Cancer Care AI Assistant")
+st.title(" Cancer Care AI Assistant")
 st.markdown("This assistant provides information and emotional support to cancer patients using Gemini and medical literature.")
 
 st.header("Patient Information")
@@ -29,7 +29,6 @@ if st.button("Generate Response"):
         st.warning("Please provide at least the Cancer Type and your Question.")
     else:
         with st.spinner("Analyzing and retrieving relevant medical literature..."):
-            # Prepare the payload for FastAPI
             payload = {
                 "query": patient_question,
                 "cancer_type": cancer_type,
@@ -43,7 +42,6 @@ if st.button("Generate Response"):
             }
             
             try:
-                # Assuming the FastAPI runs on localhost:8000
                 response = requests.post("http://localhost:8000//api/generate", json=payload)
                 
                 if response.status_code == 200:

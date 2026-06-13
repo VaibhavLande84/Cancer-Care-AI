@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 
-# Set Streamlit page config
 st.set_page_config(page_title="Cancer Care AI Assistant", page_icon="🎗️", layout="wide")
 
 st.title(" Cancer Care AI Assistant")

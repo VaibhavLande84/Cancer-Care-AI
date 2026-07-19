@@ -12,3 +12,13 @@ arxiv
 fastapi
 pydantic
 fastapi[standard]
+chromadb>=0.4.0
+langchain-chroma
+requests
+xmltodict
+pypdf
+# Provider packages — remove the ones you don't need:
+langchain-openai
+langchain-anthropic
+langchain-groq
+langchain-ollama
